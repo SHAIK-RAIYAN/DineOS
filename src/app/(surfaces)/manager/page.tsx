@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase/client'
 import { TopMovingItemsTable } from '@/components/features/manager/TopMovingItemsTable'
 import { MenuItemModal } from '@/components/features/manager/MenuItemModal'
 import { cn, formatINR } from '@/lib/utils'
+import { RevenueChart } from '@/components/features/manager/RevenueChart'
 import { DEFAULT_OUTLET_ID } from '@/lib/constants'
 import { AlertTriangle, CheckCircle2, ShieldCheck, Plus, Trash2 } from 'lucide-react'
 import type {
@@ -34,6 +35,7 @@ export default function ManagerDashboard() {
   const [totalActiveTables, setTotalActiveTables] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [showMenuItemModal, setShowMenuItemModal] = useState(false)
+  const [chartData, setChartData] = useState<{date: string, revenue: number, orders: number}[]>([])
 
   const fetchDashboardData = useCallback(async () => {
     setIsLoading(true)
@@ -53,6 +55,7 @@ export default function ManagerDashboard() {
         `
         id,
         outlet_id,
+        created_at,
         closed_at,
         manager_approval_required,
         manager_approved,
@@ -111,6 +114,7 @@ export default function ManagerDashboard() {
       const orderRecord = order as {
         id: string
         outlet_id: string
+        created_at: string
         closed_at: string | null
         manager_approval_required: boolean
         manager_approved: boolean
@@ -177,6 +181,46 @@ export default function ManagerDashboard() {
       })
     })
 
+    // Compute Chart Data
+    const dailyStats = new Map<string, { revenue: number; orders: number }>()
+    ordersData?.forEach((order) => {
+      const orderRecord = order as any
+      if (!orderRecord.created_at) return
+      
+      const date = new Date(orderRecord.created_at).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+      })
+      
+      if (!dailyStats.has(date)) {
+        dailyStats.set(date, { revenue: 0, orders: 0 })
+      }
+      
+      const stats = dailyStats.get(date)!
+      stats.orders += 1
+      
+      if (orderRecord.closed_at && orderRecord.order_items) {
+        orderRecord.order_items.forEach((item: any) => {
+          if (item.menu_items) {
+            const price = Number(item.menu_items.price)
+            const cRate = Number(item.menu_items.cgst_rate)
+            const sRate = Number(item.menu_items.sgst_rate)
+            stats.revenue += price + price * (cRate / 100) + price * (sRate / 100)
+          }
+        })
+      }
+    })
+
+    const chartArray = Array.from(dailyStats.entries()).map(([date, stats]) => ({
+      date,
+      revenue: stats.revenue,
+      orders: stats.orders
+    }))
+    
+    // Sort chronologically (assuming dates fall within same year for this demo, or we could parse dates)
+    // For simplicity, assuming the map preserves order or we can sort by parsed timestamp if we had it.
+    
+    setChartData(chartArray) // pass all historical data for scrolling
     setTotalRevenue(revenue)
     setOutletMetrics(Array.from(outletMap.values()))
     setTopItems(
@@ -301,6 +345,8 @@ export default function ManagerDashboard() {
           totalActiveTables={totalActiveTables}
           isLoading={isLoading}
         />
+
+        <RevenueChart data={chartData} isLoading={isLoading} />
 
         {pendingApprovals.length > 0 && (
           <section className="bg-orange-100 border-2 border-orange-200 rounded-2xl p-6">
