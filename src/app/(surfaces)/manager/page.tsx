@@ -215,10 +215,7 @@ export default function ManagerDashboard() {
       date,
       revenue: stats.revenue,
       orders: stats.orders
-    }))
-    
-    // Sort chronologically (assuming dates fall within same year for this demo, or we could parse dates)
-    // For simplicity, assuming the map preserves order or we can sort by parsed timestamp if we had it.
+    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     
     setChartData(chartArray) // pass all historical data for scrolling
     setTotalRevenue(revenue)

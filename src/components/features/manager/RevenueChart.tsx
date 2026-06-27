@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
+
 import { formatINR } from '@/lib/utils'
 import {
   Bar,
@@ -24,6 +26,14 @@ type RevenueChartProps = {
 }
 
 export function RevenueChart({ data, isLoading }: RevenueChartProps) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth
+    }
+  }, [data])
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-2xl border-2 border-slate-200 p-6 min-h-[400px] flex items-center justify-center">
@@ -57,7 +67,7 @@ export function RevenueChart({ data, isLoading }: RevenueChartProps) {
         </div>
       </div>
       
-      <div className="h-[350px] w-full overflow-x-auto">
+      <div ref={scrollRef} className="h-[350px] w-full overflow-x-auto">
         <div style={{ minWidth: `${Math.max(100, (data.length / 7) * 100)}%`, height: '100%' }}>
           <ResponsiveContainer width="100%" height="100%">
           <BarChart
