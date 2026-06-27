@@ -128,7 +128,7 @@ export function BillSplitter({
             >
               ALL
             </button>
-            <button
+            {/* <button
               onClick={() => onSetActiveSplitId('1')}
               className={cn(
                 'px-4 py-2 text-xs font-black rounded-lg transition-colors uppercase tracking-widest',
@@ -136,8 +136,8 @@ export function BillSplitter({
               )}
             >
               GUEST 1
-            </button>
-            <button
+            </button> */}
+            {/* <button
               onClick={() => onSetActiveSplitId('2')}
               className={cn(
                 'px-4 py-2 text-xs font-black rounded-lg transition-colors uppercase tracking-widest',
@@ -145,7 +145,7 @@ export function BillSplitter({
               )}
             >
               GUEST 2
-            </button>
+            </button> */}
           </div>
         )}
       </div>

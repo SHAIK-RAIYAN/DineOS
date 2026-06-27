@@ -52,7 +52,7 @@ export default function KDS() {
   }, [orders, focusedIndex, setFocusedIndex, bumpOrder])
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900 p-6 overflow-x-auto">
+    <main className="min-h-screen bg-slate-50 text-slate-900 p-6 overflow-y-auto">
       <header className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-black tracking-tight text-slate-900 uppercase">
