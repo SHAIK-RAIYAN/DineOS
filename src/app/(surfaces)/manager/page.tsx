@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { CrossOutletMetricCards } from '@/components/features/manager/CrossOutletMetricCards'
 import { TopMovingItemsTable } from '@/components/features/manager/TopMovingItemsTable'
+import { MenuItemModal } from '@/components/features/manager/MenuItemModal'
 import { cn, formatINR } from '@/lib/utils'
 import { DEFAULT_OUTLET_ID } from '@/lib/constants'
 import { AlertTriangle, CheckCircle2, ShieldCheck, Plus, Trash2 } from 'lucide-react'
@@ -12,6 +12,7 @@ import type {
   TopMovingItem,
   PendingApproval,
 } from '@/types'
+import { CrossOutletMetricCards } from '@/components/features/manager/CrossOutletMetricCards'
 
 type MenuItem = {
   id: string
@@ -32,6 +33,7 @@ export default function ManagerDashboard() {
   const [totalRevenue, setTotalRevenue] = useState(0)
   const [totalActiveTables, setTotalActiveTables] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [showMenuItemModal, setShowMenuItemModal] = useState(false)
 
   const fetchDashboardData = useCallback(async () => {
     setIsLoading(true)
@@ -365,12 +367,20 @@ export default function ManagerDashboard() {
 
         <section className="bg-white rounded-2xl border-2 border-slate-200 overflow-hidden">
           <div className="p-6 border-b-2 border-slate-200 bg-slate-900 flex justify-between items-center">
-            <h2 className="text-lg font-black text-white uppercase tracking-widest">
-              Menu & Inventory Control
-            </h2>
-            <span className="text-xs font-black bg-white/10 text-white border border-white/20 px-3 py-1.5 rounded-full uppercase tracking-widest">
-              {menuItems.length} Items
-            </span>
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-black text-white uppercase tracking-widest">
+                Menu & Inventory Control
+              </h2>
+              <span className="text-xs font-black bg-white/10 text-white border border-white/20 px-3 py-1.5 rounded-full uppercase tracking-widest">
+                {menuItems.length} Items
+              </span>
+            </div>
+            <button
+              onClick={() => setShowMenuItemModal(true)}
+              className="px-5 py-3 bg-white text-slate-900 font-black rounded-xl text-sm hover:bg-slate-100 transition-colors flex items-center gap-2 uppercase tracking-widest"
+            >
+              <Plus className="w-5 h-5" /> Add Item
+            </button>
           </div>
 
           <div className="divide-y-2 divide-slate-100 max-h-[600px] overflow-y-auto">
@@ -420,6 +430,12 @@ export default function ManagerDashboard() {
           </div>
         </section>
       </div>
+
+      <MenuItemModal
+        isOpen={showMenuItemModal}
+        onClose={() => setShowMenuItemModal(false)}
+        onSuccess={fetchDashboardData}
+      />
     </main>
   )
 }

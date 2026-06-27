@@ -3,6 +3,7 @@
 import { ActiveOrderTray } from '@/components/features/waiter/ActiveOrderTray'
 import { FloorPlanGrid } from '@/components/features/waiter/FloorPlanGrid'
 import { MenuCatalog } from '@/components/features/waiter/MenuCatalog'
+import { SentItemsList } from '@/components/features/waiter/SentItemsList'
 import { useWaiterStore } from '@/store/useWaiterStore'
 import { DEFAULT_OUTLET_ID } from '@/lib/constants'
 import { Wifi, WifiOff } from 'lucide-react'
@@ -144,11 +145,14 @@ export default function WaiterSurface() {
 
       <section className="flex-1 overflow-y-auto pb-32">
         <div className="flex flex-col lg:flex-row h-full">
-          <div className="p-4 flex-1 lg:border-r border-slate-200">
-            <h2 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-4">
-              Active Zones
-            </h2>
-            <FloorPlanGrid outletId={DEFAULT_OUTLET_ID} />
+          <div className="p-4 flex-1 lg:border-r border-slate-200 flex flex-col min-h-0">
+            <div>
+              <h2 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-4">
+                Active Zones
+              </h2>
+              <FloorPlanGrid outletId={DEFAULT_OUTLET_ID} />
+            </div>
+            <SentItemsList />
           </div>
           <div className="p-4 lg:w-[420px] bg-white border-t lg:border-t-0 border-slate-200">
             <h2 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-4">

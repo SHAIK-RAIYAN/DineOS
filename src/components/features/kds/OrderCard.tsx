@@ -114,7 +114,7 @@ export function OrderCard({
         className="w-full h-24 bg-slate-900 hover:bg-black active:bg-slate-800 text-white font-black text-3xl uppercase tracking-widest flex items-center justify-center border-t-4 border-slate-900"
         aria-label={`Bump ${order.menu_items?.name}`}
       >
-        BUMP
+        DONE
       </button>
     </div>
   )

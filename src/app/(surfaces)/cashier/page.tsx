@@ -1,8 +1,9 @@
 'use client'
 
-import { BillSplitter } from '@/components/features/cashier/BillSplitter'
+import { BillSplitter, type SplitSlice } from '@/components/features/cashier/BillSplitter'
 import { OpenTableSidebar } from '@/components/features/cashier/OpenTableSidebar'
 import { PaymentModal } from '@/components/features/cashier/PaymentModal'
+import { ZReportModal } from '@/components/features/cashier/ZReportModal'
 import { DEFAULT_OUTLET_ID } from '@/lib/constants'
 import { supabase } from '@/lib/supabase/client'
 import { cn, computeItemsGST, formatINR } from '@/lib/utils'
@@ -41,8 +42,13 @@ export default function CashierTerminal() {
   const [activeOrder, setActiveOrder] = useState<Order | null>(null)
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
-  const [activeSplit, setActiveSplit] = useState<number | 'ALL'>('ALL')
+  
+  const [splitMode, setSplitMode] = useState<'ITEM' | 'EQUAL' | 'CUSTOM'>('ITEM')
+  const [activeSplitId, setActiveSplitId] = useState<string | 'ALL'>('ALL')
+  const [splitSlices, setSplitSlices] = useState<SplitSlice[]>([])
+  
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showZReport, setShowZReport] = useState(false)
   const [paidSplits, setPaidSplits] = useState<number[]>([])
 
   const fetchTables = useCallback(async () => {
@@ -175,8 +181,10 @@ export default function CashierTerminal() {
     if (!table) {
       setActiveOrder(null)
       setOrderItems([])
-      setActiveSplit('ALL')
+      setActiveSplitId('ALL')
       setPaidSplits([])
+      setSplitMode('ITEM')
+      setSplitSlices([])
     }
   }
 
@@ -195,41 +203,62 @@ export default function CashierTerminal() {
       .eq('id', itemId)
   }
 
-  const calculateTotals = (): GstBreakdown & { cgstRate: number; sgstRate: number } => {
-    const filtered = orderItems.filter(
-      (item) => activeSplit === 'ALL' || item.split_group === activeSplit
-    )
-    const gstItems = filtered
+  const getGrandTotal = () => {
+    const gstItems = orderItems
       .filter((item) => item.menu_items)
       .map((item) => ({
         price: Number(item.menu_items!.price),
         cgstRate: Number(item.menu_items!.cgst_rate),
         sgstRate: Number(item.menu_items!.sgst_rate),
       }))
+    return computeItemsGST(gstItems).total
+  }
 
-    const totals = computeItemsGST(gstItems)
-    const firstItem = filtered.find((i) => i.menu_items)
-    return {
-      ...totals,
-      cgstRate: firstItem ? Number(firstItem.menu_items!.cgst_rate) : 2.5,
-      sgstRate: firstItem ? Number(firstItem.menu_items!.sgst_rate) : 2.5,
+  const calculateTotals = (): GstBreakdown & { cgstRate: number; sgstRate: number } => {
+    const firstItem = orderItems.find((i) => i.menu_items)
+    const baseCgstRate = firstItem ? Number(firstItem.menu_items!.cgst_rate) : 2.5
+    const baseSgstRate = firstItem ? Number(firstItem.menu_items!.sgst_rate) : 2.5
+
+    if (splitMode === 'ITEM') {
+      const filtered = orderItems.filter(
+        (item) => activeSplitId === 'ALL' || item.split_group.toString() === activeSplitId
+      )
+      const gstItems = filtered
+        .filter((item) => item.menu_items)
+        .map((item) => ({
+          price: Number(item.menu_items!.price),
+          cgstRate: Number(item.menu_items!.cgst_rate),
+          sgstRate: Number(item.menu_items!.sgst_rate),
+        }))
+      return { ...computeItemsGST(gstItems), cgstRate: baseCgstRate, sgstRate: baseSgstRate }
+    } else {
+      const gstItems = orderItems
+        .filter((item) => item.menu_items)
+        .map((item) => ({
+          price: Number(item.menu_items!.price),
+          cgstRate: Number(item.menu_items!.cgst_rate),
+          sgstRate: Number(item.menu_items!.sgst_rate),
+        }))
+      const grandTotals = computeItemsGST(gstItems)
+      const currentSlice = splitSlices.find(s => s.id === activeSplitId)
+      
+      if (!currentSlice) {
+        return { subtotal: 0, cgst: 0, sgst: 0, total: 0, cgstRate: baseCgstRate, sgstRate: baseSgstRate }
+      }
+      
+      const ratio = grandTotals.total > 0 ? currentSlice.amount / grandTotals.total : 0
+      return {
+        subtotal: grandTotals.subtotal * ratio,
+        cgst: grandTotals.cgst * ratio,
+        sgst: grandTotals.sgst * ratio,
+        total: currentSlice.amount,
+        cgstRate: baseCgstRate,
+        sgstRate: baseSgstRate
+      }
     }
   }
 
   const totals = calculateTotals()
-
-  const handleRequestDiscount = async () => {
-    if (!activeOrder) return
-    await supabase
-      .from('orders')
-      .update({ manager_approval_required: true, manager_approved: false })
-      .eq('id', activeOrder.id)
-    setActiveOrder((prev) =>
-      prev
-        ? { ...prev, manager_approval_required: true, manager_approved: false }
-        : null
-    )
-  }
 
   const handlePay = async (method: 'cash' | 'card' | 'upi') => {
     if (!activeOrder || !selectedTable) return
@@ -237,19 +266,35 @@ export default function CashierTerminal() {
     setIsProcessing(true)
 
     try {
-      const splitToPay = activeSplit === 'ALL' ? null : activeSplit
+      let isFullyPaid = false
 
-      if (splitToPay !== null) {
-        const newPaidSplits = [...paidSplits, splitToPay]
-        setPaidSplits(newPaidSplits)
+      if (splitMode === 'ITEM') {
+        if (activeSplitId !== 'ALL') {
+          const newPaidSplits = [...paidSplits, Number(activeSplitId)]
+          setPaidSplits(newPaidSplits)
 
-        const allGroups = [...new Set(orderItems.map((i) => i.split_group || 1))]
-        const allPaid = allGroups.every((g) => newPaidSplits.includes(g))
-
-        if (!allPaid) {
-          setShowPaymentModal(false)
-          return
+          const allGroups = [...new Set(orderItems.map((i) => i.split_group || 1))]
+          isFullyPaid = allGroups.every((g) => newPaidSplits.includes(g))
+        } else {
+          isFullyPaid = true
         }
+      } else {
+        const updatedSlices = splitSlices.map(s => 
+          s.id === activeSplitId ? { ...s, isPaid: true } : s
+        )
+        setSplitSlices(updatedSlices)
+        isFullyPaid = updatedSlices.every(s => s.isPaid)
+        
+        // Find next unpaid slice to activate automatically
+        const nextUnpaid = updatedSlices.find(s => !s.isPaid)
+        if (nextUnpaid && !isFullyPaid) {
+          setActiveSplitId(nextUnpaid.id)
+        }
+      }
+
+      if (!isFullyPaid) {
+        setShowPaymentModal(false)
+        return
       }
 
       await supabase
@@ -273,8 +318,26 @@ export default function CashierTerminal() {
     }
   }
 
-  const guestLabel =
-    activeSplit === 'ALL' ? 'Full Bill' : `Guest ${activeSplit}`
+  const getGuestLabel = () => {
+    if (splitMode === 'ITEM') {
+      return activeSplitId === 'ALL' ? 'Full Bill' : `Guest ${activeSplitId}`
+    }
+    const currentSlice = splitSlices.find(s => s.id === activeSplitId)
+    return currentSlice ? currentSlice.label : 'Select Split'
+  }
+
+  const canPay = () => {
+    if (orderItems.length === 0) return false
+    if (splitMode === 'CUSTOM') {
+      const allocated = splitSlices.reduce((sum, s) => sum + s.amount, 0)
+      if (Math.abs(allocated - getGrandTotal()) > 0.01) return false
+    }
+    const currentSlice = splitSlices.find(s => s.id === activeSplitId)
+    if ((splitMode === 'CUSTOM' || splitMode === 'EQUAL') && currentSlice?.isPaid) return false
+    if ((splitMode === 'CUSTOM' || splitMode === 'EQUAL') && splitSlices.length === 0) return false
+    if (splitMode === 'ITEM' && activeSplitId !== 'ALL' && paidSplits.includes(Number(activeSplitId))) return false
+    return true
+  }
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
@@ -282,6 +345,7 @@ export default function CashierTerminal() {
         tables={tables}
         selectedTable={selectedTable}
         onSelectTable={handleSelectTable}
+        onOpenZReport={() => setShowZReport(true)}
       />
 
       <main className="flex-1 flex flex-col bg-slate-50 border-l border-slate-200">
@@ -296,14 +360,6 @@ export default function CashierTerminal() {
                   Order ID: {activeOrder.id.slice(0, 8)}...
                 </p>
               </div>
-              {/* <button
-                onClick={handleRequestDiscount}
-                className="px-6 py-3 bg-orange-100 text-orange-800 font-bold border border-orange-200 rounded-xl text-sm hover:bg-orange-200 transition-colors uppercase tracking-widest"
-              >
-                Apply 10% Discount
-                <br/>
-                <span className='text-xs text-orange-500 font-bold uppercase tracking-widest'>for Terralogic Employees only</span>
-              </button> */}
             </header>
 
             {activeOrder.manager_approval_required && !activeOrder.manager_approved && (
@@ -315,9 +371,14 @@ export default function CashierTerminal() {
             <div className="flex gap-8 flex-1 min-h-0">
               <BillSplitter
                 orderItems={orderItems}
-                activeSplit={activeSplit}
-                onSetActiveSplit={setActiveSplit}
+                grandTotal={getGrandTotal()}
+                splitMode={splitMode}
+                onSetSplitMode={setSplitMode}
+                activeSplitId={activeSplitId}
+                onSetActiveSplitId={setActiveSplitId}
                 onToggleSplitGroup={toggleSplitGroup}
+                splitSlices={splitSlices}
+                onUpdateSplitSlices={setSplitSlices}
               />
 
               <div className="w-[400px] flex flex-col gap-6">
@@ -327,7 +388,7 @@ export default function CashierTerminal() {
                       Bill Summary
                     </h3>
                     <span className="text-xs font-black bg-slate-100 border border-slate-200 text-slate-900 px-3 py-1.5 rounded-full uppercase tracking-widest">
-                      {guestLabel}
+                      {getGuestLabel()}
                     </span>
                   </div>
 
@@ -356,10 +417,10 @@ export default function CashierTerminal() {
 
                 <button
                   onClick={() => setShowPaymentModal(true)}
-                  disabled={isProcessing || orderItems.length === 0}
+                  disabled={isProcessing || !canPay()}
                   className={cn(
                     'w-full py-5 rounded-xl font-black text-lg uppercase tracking-widest transition-all border-b-4',
-                    isProcessing || orderItems.length === 0
+                    isProcessing || !canPay()
                       ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed'
                       : 'bg-slate-900 hover:bg-black text-white border-black active:translate-y-1 active:border-b-0'
                   )}
@@ -393,12 +454,17 @@ export default function CashierTerminal() {
         totals={totals}
         cgstRate={totals.cgstRate}
         sgstRate={totals.sgstRate}
-        guestLabel={guestLabel}
+        guestLabel={getGuestLabel()}
         requiresApproval={activeOrder?.manager_approval_required ?? false}
         isApproved={activeOrder?.manager_approved ?? false}
         onClose={() => setShowPaymentModal(false)}
         onPay={handlePay}
         isProcessing={isProcessing}
+      />
+
+      <ZReportModal
+        isOpen={showZReport}
+        onClose={() => setShowZReport(false)}
       />
     </div>
   )
