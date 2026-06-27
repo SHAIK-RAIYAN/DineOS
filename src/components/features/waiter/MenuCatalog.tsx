@@ -136,7 +136,7 @@ export function MenuCatalog({ outletId }: { outletId: string }) {
       </div>
 
       {modalItem && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/80 p-4">
+        <div className="fixed top-10 left-0 right-0 z-50 flex items-end sm:items-center justify-center  p-4">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden border border-slate-200">
             <div className="flex items-center justify-between p-4 border-b border-slate-200">
               <div>
