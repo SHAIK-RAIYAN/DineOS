@@ -137,7 +137,7 @@ export function ActiveOrderTray({ outletId, onSyncComplete }: ActiveOrderTrayPro
   const cartTotal = cartItems.reduce((sum, item) => sum + Number(item.price), 0)
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t-2 border-slate-900 z-50 pb-8">
+    <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t-2 border-slate-900 z-40 pb-8">
       <div className="max-w-4xl mx-auto space-y-3">
         {error && (
           <p className="text-xs font-black text-red-600 text-center">{error}</p>
