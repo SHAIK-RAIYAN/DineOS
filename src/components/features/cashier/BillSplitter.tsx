@@ -1,6 +1,9 @@
 'use client'
 
 import { cn, formatINR } from '@/lib/utils'
+import { motion, AnimatePresence } from 'motion/react'
+import NumberFlow from '@number-flow/react'
+import { useMemo } from 'react'
 
 type OrderItem = {
   id: string
@@ -44,9 +47,23 @@ export function BillSplitter({
   splitSlices,
   onUpdateSplitSlices,
 }: BillSplitterProps) {
-  const filteredItems = orderItems.filter(
-    (item) => activeSplitId === 'ALL' || item.split_group.toString() === activeSplitId
-  )
+  const aggregatedItems = useMemo(() => {
+    const groups = orderItems.reduce((acc, item) => {
+      const name = item.menu_items?.name || 'Unknown Item'
+      if (!acc[name]) {
+        acc[name] = {
+          id: item.id,
+          name,
+          quantity: 0,
+          totalPrice: 0,
+        }
+      }
+      acc[name].quantity += 1
+      acc[name].totalPrice += Number(item.menu_items?.price || 0)
+      return acc
+    }, {} as Record<string, { id: string; name: string; quantity: number; totalPrice: number }>)
+    return Object.values(groups)
+  }, [orderItems])
 
   const handleEqualSplitChange = (guests: number) => {
     if (guests < 2) return
@@ -87,7 +104,7 @@ export function BillSplitter({
   }
 
   return (
-    <div className="flex-1 bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col">
+    <div className="flex-1 min-h-0 bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col">
       <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-col gap-4">
         <div className="flex justify-between items-center">
           <h3 className="font-black text-lg text-slate-900 uppercase">Bill Splitter</h3>
@@ -117,72 +134,38 @@ export function BillSplitter({
           </div>
         </div>
 
-        {splitMode === 'ITEM' && (
-          <div className="flex bg-slate-200 rounded-xl p-1.5 border border-slate-300 self-end">
-            <button
-              onClick={() => onSetActiveSplitId('ALL')}
-              className={cn(
-                'px-4 py-2 text-xs font-black rounded-lg transition-colors uppercase tracking-widest',
-                activeSplitId === 'ALL' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
-              )}
-            >
-              ALL
-            </button>
-            {/* <button
-              onClick={() => onSetActiveSplitId('1')}
-              className={cn(
-                'px-4 py-2 text-xs font-black rounded-lg transition-colors uppercase tracking-widest',
-                activeSplitId === '1' ? 'bg-slate-900 text-white' : 'text-slate-500'
-              )}
-            >
-              GUEST 1
-            </button> */}
-            {/* <button
-              onClick={() => onSetActiveSplitId('2')}
-              className={cn(
-                'px-4 py-2 text-xs font-black rounded-lg transition-colors uppercase tracking-widest',
-                activeSplitId === '2' ? 'bg-slate-900 text-white' : 'text-slate-500'
-              )}
-            >
-              GUEST 2
-            </button> */}
-          </div>
-        )}
+        {/* ALL button removed since we just show the receipt in ITEM mode */}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-3">
+      <div className="flex-1 overflow-y-auto p-6 space-y-3" data-lenis-prevent>
         {splitMode === 'ITEM' && (
-          <>
-            {filteredItems.map((item) => (
-              <div
-                key={item.id}
+          <AnimatePresence mode="popLayout">
+            {aggregatedItems.map((group) => (
+              <motion.div
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                key={group.id}
                 className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-slate-400 transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => onToggleSplitGroup(item.id, item.split_group || 1)}
-                    className={cn(
-                      'px-3 py-1.5 text-xs font-black rounded uppercase tracking-widest border',
-                      (item.split_group || 1) === 1
-                        ? 'bg-slate-900 text-white border-slate-900'
-                        : 'bg-white text-slate-900 border-slate-300'
-                    )}
-                  >
-                    G{item.split_group || 1}
-                  </button>
-                  <span className="font-bold text-slate-900">{item.menu_items?.name}</span>
+                  <div className="w-8 h-8 flex items-center justify-center bg-slate-200 text-slate-900 font-black rounded-lg text-sm">
+                    {group.quantity}x
+                  </div>
+                  <span className="font-bold text-slate-900">{group.name}</span>
                 </div>
                 <span className="font-black text-slate-900">
-                  {formatINR(Number(item.menu_items?.price || 0))}
+                  {formatINR(group.totalPrice)}
                 </span>
-              </div>
+              </motion.div>
             ))}
-            {filteredItems.length === 0 && (
+            {aggregatedItems.length === 0 && (
               <p className="text-center text-slate-400 font-bold py-8 uppercase tracking-widest text-sm">
                 No items
               </p>
             )}
-          </>
+          </AnimatePresence>
         )}
 
         {splitMode === 'EQUAL' && (
@@ -223,8 +206,8 @@ export function BillSplitter({
                     <span className={cn('w-4 h-4 rounded-full border-2', slice.isPaid ? 'bg-green-500 border-green-500' : 'border-slate-300')} />
                     <span className={cn('font-black uppercase tracking-widest', slice.isPaid ? 'text-green-800' : 'text-slate-900')}>{slice.label}</span>
                   </div>
-                  <span className={cn('font-black text-lg', slice.isPaid ? 'text-green-800' : 'text-slate-900')}>
-                    {formatINR(slice.amount)}
+                  <span className={cn('font-black text-lg flex items-center', slice.isPaid ? 'text-green-800' : 'text-slate-900')}>
+                    ₹<NumberFlow value={slice.amount} />
                   </span>
                 </button>
               ))}
@@ -271,7 +254,7 @@ export function BillSplitter({
                     type="number"
                     value={slice.amount === 0 ? '' : slice.amount}
                     onChange={(e) => handleCustomUpdate(slice.id, Number(e.target.value))}
-                    className="w-full p-2 border border-slate-300 rounded-lg font-black text-lg mt-2"
+                    className="w-full p-2 border border-slate-300 rounded-lg text-black font-black text-lg mt-2"
                     placeholder="0.00"
                     min="0"
                   />
@@ -281,12 +264,30 @@ export function BillSplitter({
               </div>
             ))}
             
-            <button
-              onClick={handleCustomAdd}
-              className="w-full py-3 border-2 border-dashed border-slate-300 text-slate-500 rounded-xl font-black uppercase tracking-widest hover:border-slate-400 hover:text-slate-700 transition-colors text-sm"
-            >
-              + Add Guest
-            </button>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={handleCustomAdd}
+                className="flex-1 py-3 border-2 border-dashed border-slate-300 text-slate-500 rounded-xl font-black uppercase tracking-widest hover:border-slate-400 hover:text-slate-700 transition-colors text-sm"
+              >
+                + Add Guest
+              </button>
+              {Math.abs(splitSlices.reduce((a, b) => a + b.amount, 0) - grandTotal) > 0.01 && (
+                <button
+                  onClick={() => {
+                    const currentSum = splitSlices.reduce((acc, s) => acc + s.amount, 0)
+                    const remaining = Math.max(0, grandTotal - currentSum)
+                    if (remaining > 0 && activeSplitId !== 'ALL') {
+                      handleCustomUpdate(activeSplitId, remaining)
+                    } else if (remaining > 0) {
+                       handleCustomAdd()
+                    }
+                  }}
+                  className="flex-1 py-3 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-black uppercase tracking-widest hover:bg-indigo-100 transition-colors text-sm"
+                >
+                  Fill Remaining
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

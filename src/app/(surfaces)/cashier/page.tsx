@@ -4,11 +4,14 @@ import { BillSplitter, type SplitSlice } from '@/components/features/cashier/Bil
 import { OpenTableSidebar } from '@/components/features/cashier/OpenTableSidebar'
 import { PaymentModal } from '@/components/features/cashier/PaymentModal'
 import { ZReportModal } from '@/components/features/cashier/ZReportModal'
+import { SurfaceHeader } from '@/components/UI/SurfaceHeader'
 import { DEFAULT_OUTLET_ID } from '@/lib/constants'
 import { supabase } from '@/lib/supabase/client'
 import { cn, computeItemsGST, formatINR } from '@/lib/utils'
 import type { GstBreakdown } from '@/types'
 import { useCallback, useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
+import NumberFlow from '@number-flow/react'
 
 type Table = {
   id: string
@@ -178,13 +181,14 @@ export default function CashierTerminal() {
 
   const handleSelectTable = (table: Table | null) => {
     setSelectedTable(table)
+    setActiveSplitId('ALL')
+    setPaidSplits([])
+    setSplitMode('ITEM')
+    setSplitSlices([])
+    
     if (!table) {
       setActiveOrder(null)
       setOrderItems([])
-      setActiveSplitId('ALL')
-      setPaidSplits([])
-      setSplitMode('ITEM')
-      setSplitSlices([])
     }
   }
 
@@ -328,6 +332,7 @@ export default function CashierTerminal() {
 
   const canPay = () => {
     if (orderItems.length === 0) return false
+    if (totals.total <= 0) return false
     if (splitMode === 'CUSTOM') {
       const allocated = splitSlices.reduce((sum, s) => sum + s.amount, 0)
       if (Math.abs(allocated - getGrandTotal()) > 0.01) return false
@@ -340,17 +345,27 @@ export default function CashierTerminal() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <OpenTableSidebar
-        tables={tables}
-        selectedTable={selectedTable}
-        onSelectTable={handleSelectTable}
-        onOpenZReport={() => setShowZReport(true)}
-      />
+    <div className="flex flex-col h-screen bg-slate-50 overflow-hidden font-sans">
+      <SurfaceHeader surfaceName="Cashier" isOnline={true} />
+      
+      <div className="flex flex-1 overflow-hidden">
+        <OpenTableSidebar
+          tables={tables}
+          selectedTable={selectedTable}
+          onSelectTable={handleSelectTable}
+          onOpenZReport={() => setShowZReport(true)}
+        />
 
-      <main className="flex-1 flex flex-col bg-slate-50 border-l border-slate-200">
-        {selectedTable && activeOrder ? (
-          <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full p-8">
+        <main className="flex-1 flex flex-col bg-slate-50 border-l border-slate-200 relative">
+          <AnimatePresence mode="wait">
+          {selectedTable && activeOrder ? (
+            <motion.div 
+              key="active-table"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="flex-1 flex flex-col max-w-6xl mx-auto w-full p-8"
+            >
             <header className="mb-8 flex justify-between items-end">
               <div>
                 <h2 className="text-4xl font-black text-slate-900 uppercase">
@@ -393,24 +408,24 @@ export default function CashierTerminal() {
                   </div>
 
                   <div className="space-y-4 text-sm">
-                    <div className="flex justify-between text-slate-900 font-bold">
+                    <div className="flex justify-between text-slate-900 font-bold items-center">
                       <span>Subtotal</span>
-                      <span>{formatINR(totals.subtotal)}</span>
+                      <span className="flex items-center">₹<NumberFlow value={totals.subtotal} /></span>
                     </div>
-                    <div className="flex justify-between text-slate-500 font-bold">
+                    <div className="flex justify-between text-slate-500 font-bold items-center">
                       <span>CGST ({totals.cgstRate}%)</span>
-                      <span>{formatINR(totals.cgst)}</span>
+                      <span className="flex items-center">₹<NumberFlow value={totals.cgst} /></span>
                     </div>
-                    <div className="flex justify-between text-slate-500 font-bold">
+                    <div className="flex justify-between text-slate-500 font-bold items-center">
                       <span>SGST ({totals.sgstRate}%)</span>
-                      <span>{formatINR(totals.sgst)}</span>
+                      <span className="flex items-center">₹<NumberFlow value={totals.sgst} /></span>
                     </div>
                   </div>
 
                   <div className="pt-6 border-t border-slate-200 flex justify-between items-end">
                     <span className="font-black text-slate-900 uppercase tracking-widest">Total</span>
-                    <span className="text-4xl font-black text-slate-900">
-                      {formatINR(totals.total)}
+                    <span className="text-4xl font-black text-slate-900 flex items-center">
+                      ₹<NumberFlow value={totals.total} />
                     </span>
                   </div>
                 </div>
@@ -429,9 +444,15 @@ export default function CashierTerminal() {
                 </button>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="flex-1 flex items-center justify-center">
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="empty-state"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
             <div className="text-center space-y-4">
               <div className="w-24 h-24 bg-white border border-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <span className="text-4xl">🧾</span>
@@ -444,9 +465,11 @@ export default function CashierTerminal() {
                 payment.
               </p>
             </div>
-          </div>
-        )}
-      </main>
+            </motion.div>
+          )}
+          </AnimatePresence>
+        </main>
+      </div>
 
       <PaymentModal
         isOpen={showPaymentModal}
