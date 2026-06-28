@@ -23,8 +23,21 @@ const garamond = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "DineOS POS",
-  description: "Next-Generation Real-Time POS Platform",
+  title: "DineOS",
+  description: "A real-time, decentralized multi-tenant iPOS system.",
+  openGraph: {
+    title: "DineOS",
+    description: "A real-time, decentralized multi-tenant iPOS system.",
+    url: "https://dineos.raiyan.app",
+    type: "website",
+    images: ["/dineos.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DineOS - Real-time Restaurant POS",
+    description: "A real-time, decentralized multi-tenant iPOS system.",
+    images: ["/dineos.png"],
+  },
 };
 
 export default function RootLayout({
