@@ -3,7 +3,7 @@
 import { supabase } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { useWaiterStore } from '@/store/useWaiterStore'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 
 type SentItem = {
@@ -28,6 +28,21 @@ export function SentItemsList() {
   const [tableStatus, setTableStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [isReleasing, setIsReleasing] = useState(false)
+
+  const groupedItems = useMemo(() => {
+    const groups = items.reduce((acc, item) => {
+      const itemName = item.menu_items?.name || 'Unknown Item'
+      const key = `${itemName}-${item.status}-${JSON.stringify(item.modifiers)}`
+      if (!acc[key]) {
+        acc[key] = { ...item, quantity: 1, instanceIds: [item.id] }
+      } else {
+        acc[key].quantity += 1
+        acc[key].instanceIds.push(item.id)
+      }
+      return acc
+    }, {} as Record<string, SentItem & { quantity: number; instanceIds: string[] }>)
+    return Object.values(groups)
+  }, [items])
 
   useEffect(() => {
     if (!selectedTableId) return
@@ -215,19 +230,19 @@ export function SentItemsList() {
             </motion.div>
           ) : (
             <div className="p-2 space-y-2">
-              {items.map((item) => (
+              {groupedItems.map((item) => (
                 <motion.div
                   layout
                   initial={{ opacity: 0, y: 5, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  key={item.id}
+                  key={item.instanceIds[0]}
                   className="flex flex-col p-2.5 rounded-xl gap-1.5 border shadow-sm bg-white border-slate-100"
                 >
                   <div className="flex justify-between items-start gap-2">
                     <div className="flex-1 min-w-0">
                       <span className="font-bold text-slate-900 text-xs block">
-                        {item.menu_items?.name || 'Unknown Item'}
+                        {item.quantity > 1 ? `${item.quantity}x ` : ''}{item.menu_items?.name || 'Unknown Item'}
                       </span>
                     </div>
                     <div className={cn(

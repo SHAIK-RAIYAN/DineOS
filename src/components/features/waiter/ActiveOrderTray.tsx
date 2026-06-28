@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useWaiterStore } from '@/store/useWaiterStore'
 import { supabase } from '@/lib/supabase/client'
-import { ShoppingCart, Wifi, WifiOff, Loader2, Trash2 } from 'lucide-react'
+import { ShoppingCart, Wifi, WifiOff, Loader2, Trash2, Plus, Minus } from 'lucide-react'
 import { cn, formatINR } from '@/lib/utils'
 import { motion, AnimatePresence } from 'motion/react'
+import NumberFlow from '@number-flow/react'
 
 type ActiveOrderTrayProps = {
   outletId: string
@@ -24,9 +25,24 @@ export function ActiveOrderTray({ outletId, onSyncComplete }: ActiveOrderTrayPro
     activeOrderId,
     setActiveOrderId,
     addToOfflineQueue,
+    addToCart,
   } = useWaiterStore()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const groupedItems = useMemo(() => {
+    const groups = cartItems.reduce((acc, item) => {
+      const key = `${item.menu_item_id}-${JSON.stringify(item.modifiers)}`
+      if (!acc[key]) {
+        acc[key] = { ...item, quantity: 1, instanceIds: [item.id] }
+      } else {
+        acc[key].quantity += 1
+        acc[key].instanceIds.push(item.id)
+      }
+      return acc
+    }, {} as Record<string, typeof cartItems[0] & { quantity: number; instanceIds: string[] }>)
+    return Object.values(groups)
+  }, [cartItems])
 
   // Removed duplicate useEffect that syncs offline orders manually.
   // Synchronization is handled strictly by waiter/page.tsx flushing to /api/sync.
@@ -132,9 +148,9 @@ export function ActiveOrderTray({ outletId, onSyncComplete }: ActiveOrderTrayPro
             )}
             <div className="max-h-40 overflow-y-auto space-y-2 pr-2" data-lenis-prevent>
               <AnimatePresence mode="popLayout">
-                {cartItems.map((item) => (
+                {groupedItems.map((item) => (
                   <motion.div
-                    key={item.id}
+                    key={item.instanceIds[0]}
                     layout
                     initial={{ opacity: 0, x: -20, scale: 0.95 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
@@ -152,12 +168,36 @@ export function ActiveOrderTray({ outletId, onSyncComplete }: ActiveOrderTrayPro
                       )}
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="font-black text-slate-900 text-sm">
-                        {formatINR(Number(item.price))}
+                      <span className="font-black text-slate-900 text-sm w-16 text-right">
+                        {formatINR(Number(item.price) * item.quantity)}
                       </span>
+                      
+                      <div className="flex items-center bg-white border border-slate-200 rounded-lg h-8 shadow-sm">
+                        <button
+                          onClick={() => removeFromCart(item.instanceIds[0])}
+                          className="w-8 h-full flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="w-6 text-center font-black text-slate-900 text-xs flex items-center justify-center">
+                          <NumberFlow value={item.quantity} />
+                        </span>
+                        <button
+                          onClick={() => addToCart({
+                            menu_item_id: item.menu_item_id,
+                            menu_item_name: item.menu_item_name,
+                            price: item.price,
+                            modifiers: item.modifiers,
+                          })}
+                          className="w-8 h-full flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+
                       <button
-                        onClick={() => removeFromCart(item.id)}
-                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg flex items-center justify-center transition-colors"
+                        onClick={() => item.instanceIds.forEach(id => removeFromCart(id))}
+                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md flex items-center justify-center transition-colors ml-1"
                         aria-label={`Remove ${item.menu_item_name}`}
                       >
                         <Trash2 className="w-4 h-4" />

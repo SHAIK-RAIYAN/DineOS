@@ -6,8 +6,9 @@ import { useWaiterStore } from '@/store/useWaiterStore'
 import { MODIFIER_PRESETS } from '@/lib/constants'
 import { useEffect, useState } from 'react'
 import type { ModifierMap } from '@/types'
-import { X } from 'lucide-react'
+import { X, Minus, Plus } from 'lucide-react'
 import { motion,type Variants, AnimatePresence } from 'motion/react'
+import NumberFlow from '@number-flow/react'
 
 type MenuItem = {
   id: string
@@ -21,6 +22,7 @@ export function MenuCatalog({ outletId }: { outletId: string }) {
   const [modalItem, setModalItem] = useState<MenuItem | null>(null)
   const [modifiers, setModifiers] = useState<ModifierMap>({})
   const [customNote, setCustomNote] = useState('')
+  const [quantity, setQuantity] = useState(1)
   const { selectedTableId, addToCart } = useWaiterStore()
 
   useEffect(() => {
@@ -86,15 +88,18 @@ export function MenuCatalog({ outletId }: { outletId: string }) {
     if (customNote.trim()) {
       activeModifiers['Custom Note'] = customNote.trim()
     }
-    addToCart({
-      menu_item_id: modalItem.id,
-      menu_item_name: modalItem.name,
-      price: modalItem.price,
-      modifiers: activeModifiers,
-    })
+    for (let i = 0; i < quantity; i++) {
+      addToCart({
+        menu_item_id: modalItem.id,
+        menu_item_name: modalItem.name,
+        price: modalItem.price,
+        modifiers: activeModifiers,
+      })
+    }
     setModalItem(null)
     setModifiers({})
     setCustomNote('')
+    setQuantity(1)
   }
 
   if (!selectedTableId) {
@@ -217,12 +222,29 @@ export function MenuCatalog({ outletId }: { outletId: string }) {
                   />
                 </div>
               </div>
-              <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+              <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center gap-3">
+                <div className="flex items-center bg-white border border-slate-200 rounded-xl h-[48px] shadow-sm shrink-0">
+                  <button 
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-12 h-full flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="w-8 text-center font-black text-slate-900 text-sm flex items-center justify-center">
+                    <NumberFlow value={quantity} />
+                  </span>
+                  <button 
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-12 h-full flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
                 <button
                   onClick={confirmAddToCart}
-                  className="w-full py-3 bg-slate-900 text-white font-black rounded-xl hover:bg-black transition-all min-h-[48px] shadow-md hover:shadow-lg active:scale-[0.98]"
+                  className="flex-1 h-[48px] bg-slate-900 text-white font-black rounded-xl hover:bg-black transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
                 >
-                  Add to Order
+                  Add {quantity > 1 ? quantity : ''} to Order
                 </button>
               </div>
             </motion.div>
