@@ -58,40 +58,10 @@ export default function WaiterSurface() {
       if (result.success && result.processed.length === offlineQueue.length) {
         clearOfflineQueue()
       }
-    } catch {
-      const fireMutations = offlineQueue.filter((m) => m.type === 'FIRE_ORDER')
-      for (const mutation of fireMutations) {
-        if (mutation.type !== 'FIRE_ORDER') continue
-
-        const { data: orderData } = await supabase
-          .from('orders')
-          .select('id, closed_at')
-          .eq('table_id', mutation.tableId)
-          .is('closed_at', null)
-          .maybeSingle()
-
-        if (!orderData) {
-          removeFromOfflineQueue(mutation.id)
-          resetTableSession()
-          continue
-        }
-
-        const insertPayload = mutation.items.map((item) => ({
-          order_id: mutation.orderId,
-          menu_item_id: item.menu_item_id,
-          modifiers: item.modifiers,
-          status: 'NEW' as const,
-        }))
-
-        const { error } = await supabase.from('order_items').insert(insertPayload)
-        if (!error) {
-          await supabase
-            .from('tables')
-            .update({ status: 'SENT', updated_at: new Date().toISOString() })
-            .eq('id', mutation.tableId)
-          removeFromOfflineQueue(mutation.id)
-        }
-      }
+    } catch (error) {
+      console.error('Failed to sync offline queue:', error)
+      // Do not manually retry client-side insertions here.
+      // Leave the items in the offlineQueue for the next attempt.
     }
   }, [
     offlineQueue,

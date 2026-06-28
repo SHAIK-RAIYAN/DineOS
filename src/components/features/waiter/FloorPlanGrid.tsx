@@ -20,6 +20,8 @@ export function FloorPlanGrid({ outletId }: { outletId: string }) {
     selectTable,
     setActiveOrderId,
     resetTableSession,
+    isOnline,
+    addToOfflineQueue,
   } = useWaiterStore()
 
   useEffect(() => {
@@ -91,6 +93,24 @@ export function FloorPlanGrid({ outletId }: { outletId: string }) {
 
     if (table.status === 'FREE') {
       const orderId = crypto.randomUUID()
+
+      if (!isOnline) {
+        addToOfflineQueue({
+          id: crypto.randomUUID(),
+          type: 'OPEN_TABLE',
+          tableId: table.id,
+          orderId,
+          outletId,
+        })
+        setTables((current) =>
+          current.map((t) =>
+            t.id === table.id ? { ...t, status: 'OCCUPIED' } : t
+          )
+        )
+        setActiveOrderId(orderId)
+        return
+      }
+
       const { error: orderError } = await supabase.from('orders').insert({
         id: orderId,
         table_id: table.id,

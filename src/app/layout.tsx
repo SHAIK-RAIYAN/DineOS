@@ -1,24 +1,44 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
+import type { Metadata } from "next";
+import { Cormorant_Garamond, Inter, Libre_Baskerville } from "next/font/google";
 
-const inter = Inter({ subsets: ['latin'], weight: ['500', '700', '900'] })
+import { LenisProvider } from "../components/providers/lenis-provider";
+import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["500", "700", "900"],
+  variable: "--font-inter",
+});
+
+const libre = Libre_Baskerville({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-libre",
+});
+
+const garamond = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-garamond",
+});
 
 export const metadata: Metadata = {
-  title: 'DineOS POS',
-  description: 'Next-Generation Real-Time POS Platform',
-}
+  title: "DineOS POS",
+  description: "Next-Generation Real-Time POS Platform",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-slate-50 text-slate-900 antialiased selection:bg-indigo-500 selection:text-white`}>
-        {children}
+    <html
+      lang="en"
+      className={`${inter.variable} ${libre.variable} ${garamond.variable}`}>
+      <body className="font-sans bg-slate-50 text-slate-900 antialiased selection:bg-yellow-900 selection:text-white">
+        <LenisProvider>{children}</LenisProvider>
       </body>
     </html>
-  )
+  );
 }

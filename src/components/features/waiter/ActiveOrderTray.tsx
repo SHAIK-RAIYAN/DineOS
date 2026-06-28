@@ -27,41 +27,8 @@ export function ActiveOrderTray({ outletId, onSyncComplete }: ActiveOrderTrayPro
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (isOnline && offlineQueue.length > 0 && !isSubmitting) {
-      const syncOfflineOrders = async () => {
-        setIsSubmitting(true)
-        
-        try {
-          for (const mutation of offlineQueue) {
-            if (mutation.type === 'FIRE_ORDER') {
-              const { error: itemsError } = await supabase
-                .from('order_items')
-                .insert(mutation.items.map((i: any) => ({
-                  order_id: mutation.orderId,
-                  menu_item_id: i.menu_item_id,
-                  modifiers: i.modifiers,
-                  status: 'NEW'
-                })))
-
-              if (!itemsError) {
-                await supabase
-                  .from('tables')
-                  .update({ status: 'SENT', updated_at: new Date().toISOString() })
-                  .eq('id', mutation.tableId)
-              }
-            }
-          }
-        } finally {
-          clearOfflineQueue()
-          setIsSubmitting(false)
-          onSyncComplete?.()
-        }
-      }
-
-      syncOfflineOrders()
-    }
-  }, [isOnline, offlineQueue, isSubmitting, clearOfflineQueue, onSyncComplete])
+  // Removed duplicate useEffect that syncs offline orders manually.
+  // Synchronization is handled strictly by waiter/page.tsx flushing to /api/sync.
 
   if (cartItems.length === 0) return null
 
@@ -73,6 +40,38 @@ export function ActiveOrderTray({ outletId, onSyncComplete }: ActiveOrderTrayPro
 
     try {
       let orderId = activeOrderId
+
+      const itemsPayload = cartItems.map((item) => ({
+        menu_item_id: item.menu_item_id,
+        modifiers: item.modifiers,
+      }))
+
+      if (!isOnline) {
+        if (!orderId) {
+          orderId = crypto.randomUUID()
+          // We assume OPEN_TABLE might not have fired if orderId was missing,
+          // though FloorPlanGrid normally handles it. We queue OPEN_TABLE just in case.
+          addToOfflineQueue({
+            id: crypto.randomUUID(),
+            type: 'OPEN_TABLE',
+            tableId: selectedTableId,
+            orderId,
+            outletId,
+          })
+          setActiveOrderId(orderId)
+        }
+
+        addToOfflineQueue({
+          id: crypto.randomUUID(),
+          type: 'FIRE_ORDER',
+          tableId: selectedTableId,
+          orderId,
+          outletId,
+          items: itemsPayload,
+        })
+        clearCart()
+        return
+      }
 
       if (!orderId) {
         orderId = crypto.randomUUID()
@@ -86,24 +85,6 @@ export function ActiveOrderTray({ outletId, onSyncComplete }: ActiveOrderTrayPro
           return
         }
         setActiveOrderId(orderId)
-      }
-
-      const itemsPayload = cartItems.map((item) => ({
-        menu_item_id: item.menu_item_id,
-        modifiers: item.modifiers,
-      }))
-
-      if (!isOnline) {
-        addToOfflineQueue({
-          id: crypto.randomUUID(),
-          type: 'FIRE_ORDER',
-          tableId: selectedTableId,
-          orderId,
-          outletId,
-          items: itemsPayload,
-        })
-        clearCart()
-        return
       }
 
       const insertPayload = cartItems.map((item) => ({
