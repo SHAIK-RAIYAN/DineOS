@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import NumberFlow from "@number-flow/react";
 import { CheckCheck } from "lucide-react";
 import { motion } from "motion/react";
+import Link from "next/link";
 import { ReactNode, useRef, useState } from "react";
 
 // --- INLINE REPLACEMENTS FOR MISSING COMPONENTS ---
@@ -267,7 +268,7 @@ export default function PricingSection5() {
                     <NumberFlow
                       format={{ currency: "USD" }}
                       value={isYearly ? plan.yearlyPrice : plan.price}
-                      className="text-4xl md:text-5xl font-garamond font-bold ml-1"
+                      className="text-3xl md:text-4xl font-libre font-bold ml-1"
                     />
                   </span>
                   <span className="text-[#5A5A5A] font-sans font-semibold ml-2 uppercase tracking-widest text-[10px]">
@@ -278,14 +279,15 @@ export default function PricingSection5() {
 
               {/* Card Content */}
               <div className="p-6 flex flex-col flex-grow">
-                <button
+                <Link
+                  href="/subscription"
                   className={`w-full mb-6 py-3 px-4 text-xs font-sans uppercase tracking-[0.2em] font-bold rounded-full transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 ${
                     plan.popular
                       ? "bg-[#C5A880] text-[#0A0A0A] hover:bg-[#FAF9F6]"
                       : "bg-transparent border border-[#333333] text-[#FAF9F6] hover:border-[#C5A880] hover:text-[#C5A880]"
                   }`}>
                   {plan.buttonText}
-                </button>
+                </Link>
 
                 <div className="space-y-4 pt-2 flex-grow">
                   <div className="flex items-center gap-4">

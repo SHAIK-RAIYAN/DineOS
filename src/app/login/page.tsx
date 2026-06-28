@@ -5,6 +5,7 @@ import { motion, type Variants } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import ChefIcon from "../../../public/Icons/chef";
+import { SplashHeader } from "@/components/UI/SpashHeader";
 
 const roles = [
   {
@@ -56,11 +57,12 @@ const itemVariants: Variants = {
 
 export default function AuthPage() {
   return (
-    <div className="min-h-screen lg:max-h-screen bg-[#FAF9F6] text-[#0A0A0A] flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden selection:bg-[#C5A880] selection:text-white">
+    <div className="min-h-screen bg-[#FAF9F6] text-[#0A0A0A] flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden selection:bg-[#C5A880] selection:text-white">
+      <SplashHeader />
       {/* Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#C5A880]/15 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="z-10 w-full max-w-7xl space-y-12 py-12">
+      <div className="z-10 w-full mt-10 max-w-7xl space-y-12 py-12">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -68,10 +70,10 @@ export default function AuthPage() {
           className="text-center space-y-4">
           <div className="flex justify-center mb-6">
             <ChefIcon className="w-16 h-16 text-[#C5A880]" />
+            <h1 className="text-5xl md:text-7xl font-garamond font-bold text-[#0A0A0A] tracking-tight">
+              Select Workspace
+            </h1>
           </div>
-          <h1 className="text-5xl md:text-7xl font-garamond font-bold text-[#0A0A0A] tracking-tight">
-            Select Workspace
-          </h1>
           <p className="text-[#5A5A5A] text-md max-w-xl mx-auto font-sans">
             Authentication bypassed for demo. Select a role below to launch the
             surface.

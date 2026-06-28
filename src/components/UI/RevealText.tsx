@@ -13,7 +13,7 @@ export function RevealText({ text }: RevealTextProps) {
       <motion.span
         variants={{
           rest: { y: 0 },
-          hover: { y: "-100%" },
+          hover: { y: "-120%" },
         }}
         transition={{ duration: 0.3, ease: [0.33, 1, 0.68, 1] }}
         className="inline-block ">

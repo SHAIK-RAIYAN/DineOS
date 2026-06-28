@@ -3,6 +3,7 @@
 import { useLenis } from "lenis/react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import ChefIcon from "../../../public/Icons/chef";
 import { RevealText } from "./RevealText";
@@ -10,22 +11,29 @@ import { RevealText } from "./RevealText";
 export function SplashHeader() {
   const [isOpen, setIsOpen] = useState(false);
   const lenis = useLenis();
+  const pathname = usePathname();
 
   const navLinks = [
-    { label: "Home", href: "#Home" },
+    { label: "Home", href: "/" },
+    { label: "About", href: "/about" },
     { label: "Signup/Login", href: "/login" },
-    { label: "Buy Premium", href: "#premium" },
-    { label: "Contact", href: "#contact" },
+    { label: "Buy Premium", href: "/#premium" },
+    { label: "Contact", href: "/#contact" },
   ];
 
   const handleNavigation = (
     e: React.MouseEvent<HTMLAnchorElement>,
     href: string,
   ) => {
-    if (href.startsWith("#")) {
-      e.preventDefault();
-      if (lenis) {
-        lenis.scrollTo(href, { offset: 0 });
+    // Intercept only if we are on the root page and it's a root/hash link
+    if (pathname === "/") {
+      if (href === "/") {
+        e.preventDefault();
+        lenis?.scrollTo(0, { offset: 0 });
+      } else if (href.startsWith("/#")) {
+        e.preventDefault();
+        const targetId = href.replace("/", "");
+        lenis?.scrollTo(targetId, { offset: 0 });
       }
     }
     setIsOpen(false);
@@ -38,11 +46,10 @@ export function SplashHeader() {
         animate={{ width: isOpen ? "600px" : "400px" }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className="bg-white text-black flex items-center justify-between rounded-3xl px-8 py-4 shadow-2xl overflow-hidden">
-        <a 
-          href="#Home"
-          onClick={(e) => handleNavigation(e, "#Home")}
-          className="flex items-start justify-center gap-1 shrink-0 cursor-pointer"
-        >
+        <a
+          href="/"
+          onClick={() => setIsOpen(false)}
+          className="flex items-start justify-center gap-1 shrink-0 cursor-pointer">
           <ChefIcon className="size-8" />
           <h1 className="text-2xl md:text-3xl font-libre font-bold tracking-tight">
             DINEOS
