@@ -74,9 +74,12 @@ export default function AuthPage() {
               Select Workspace
             </h1>
           </div>
-          <p className="text-[#5A5A5A] text-md max-w-xl mx-auto font-sans">
-            Authentication bypassed for demo. Select a role below to launch the
-            surface.
+          <p className="text-[#5A5A5A] text-lg md:text-xl max-w-2xl mx-auto font-sans leading-relaxed">
+            Actual login and authentication are not implemented because this is a portfolio "Try Product". Before selecting a role below, please check out the{" "}
+            <Link href="/about" className="text-[#C5A880] hover:underline font-extrabold tracking-wide">About page</Link>{" "}
+            and{" "}
+            <Link href="/howtouse" className="text-[#C5A880] hover:underline font-extrabold tracking-wide">How to Use</Link>{" "}
+            page to fully understand how to navigate the ecosystem.
           </p>
         </motion.div>
 
