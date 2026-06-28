@@ -28,7 +28,7 @@ export default function RootIndex() {
   const fadeUpY = useTransform(scrollYProgress, [0, 1], [100, -100]);
 
   return (
-    <main className="min-h-screen bg-[#0A0A0A] selection:bg-[#C5A880] selection:text-[#0A0A0A] font-sans overflow-x-hidden text-[#FAF9F6]">
+    <main className="selection:bg-yellow-900 selection:text-white min-h-screen bg-[#0A0A0A] selection:bg-[#C5A880] selection:text-[#0A0A0A] font-sans overflow-x-hidden text-[#FAF9F6]">
       <section
         id="Home"
         className="relative w-full h-screen min-h-[800px]  flex flex-col items-center justify-center overflow-hidden">

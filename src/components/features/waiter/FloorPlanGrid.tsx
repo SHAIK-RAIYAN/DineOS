@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useWaiterStore } from '@/store/useWaiterStore'
 import { cn } from '@/lib/utils'
+import { motion } from 'motion/react'
 import type { TableStatus } from '@/types'
 
 type Table = {
@@ -144,8 +145,8 @@ export function FloorPlanGrid({ outletId }: { outletId: string }) {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {[1, 2, 3, 4, 5, 6].map((n) => (
+      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
           <div
             key={n}
             className="h-16 md:h-20 rounded-xl bg-slate-200 animate-pulse border border-slate-300"
@@ -155,33 +156,56 @@ export function FloorPlanGrid({ outletId }: { outletId: string }) {
     )
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.03
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, scale: 0.95, y: 5 },
+    show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 400, damping: 30 } }
+  }
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+    <motion.div 
+      variants={containerVariants} 
+      initial="hidden" 
+      animate="show" 
+      className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"
+    >
       {tables.map((table) => (
-        <button
+        <motion.button
+          variants={itemVariants}
+          whileHover={table.status !== 'PAID' ? { scale: 1.03, y: -1 } : {}}
+          whileTap={table.status !== 'PAID' ? { scale: 0.96 } : {}}
           key={table.id}
           onClick={() => handleTableClick(table)}
           disabled={table.status === 'PAID'}
           className={cn(
-            'min-h-[64px] h-16 md:h-20 rounded-xl flex flex-col items-center justify-center font-bold transition-all border',
+            'min-h-[56px] h-16 md:h-20 rounded-xl flex flex-col items-center justify-center font-bold transition-colors border shadow-sm',
             table.status === 'FREE' &&
-              'bg-green-100 text-green-800 border-green-200',
+              'bg-white text-green-700 border-green-200 hover:border-green-400 hover:shadow-md',
             table.status === 'OCCUPIED' &&
-              'bg-red-100 text-red-800 border-red-200',
+              'bg-red-50 text-red-700 border-red-200 hover:border-red-300 hover:shadow-md',
             table.status === 'SENT' &&
-              'bg-yellow-100 text-yellow-800 border-yellow-200',
+              'bg-yellow-50 text-yellow-700 border-yellow-200 hover:border-yellow-300 hover:shadow-md',
             table.status === 'PAID' &&
-              'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed',
+              'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed shadow-none',
             selectedTableId === table.id &&
-              'ring-2 ring-slate-900 ring-offset-2 border-transparent'
+              'ring-2 ring-slate-900 ring-offset-1 border-transparent shadow-md'
           )}
         >
-          <span className="text-lg md:text-xl font-black">Table {table.table_number}</span>
-          <span className="text-[10px] md:text-xs uppercase tracking-widest mt-0.5">
+          <span className="text-base md:text-lg font-black">Table {table.table_number}</span>
+          <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest mt-0.5 opacity-80">
             {table.status}
           </span>
-        </button>
+        </motion.button>
       ))}
-    </div>
+    </motion.div>
   )
 }

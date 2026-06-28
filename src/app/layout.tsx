@@ -36,7 +36,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} ${libre.variable} ${garamond.variable}`}>
-      <body className="font-sans bg-slate-50 text-slate-900 antialiased selection:bg-yellow-900 selection:text-white">
+      <body className="font-sans bg-slate-50 text-slate-900 antialiased ">
         <LenisProvider>{children}</LenisProvider>
       </body>
     </html>

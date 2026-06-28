@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { useWaiterStore } from '@/store/useWaiterStore'
 import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 
 type SentItem = {
   id: string
@@ -160,81 +161,106 @@ export function SentItemsList() {
   }
 
   return (
-    <div className="mt-6 flex flex-col h-full min-h-[300px]">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xs font-bold text-slate-900 uppercase tracking-widest">
+    <div className="flex flex-col h-full max-h-[50vh] bg-white border border-slate-200 rounded-[1.5rem] overflow-hidden shadow-sm">
+      <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+        <h2 className="text-[10px] font-bold text-slate-900 uppercase tracking-widest flex items-center gap-2">
           Live Order Status
         </h2>
-        <span className="text-xs font-bold bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full uppercase tracking-widest">
-          {items.length} Items
+        <span className="text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-lg shadow-sm">
+          {items.length} items
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-        {loading && items.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-sm font-bold text-slate-400">
-            Loading items...
-          </div>
-        ) : items.length === 0 && tableStatus === 'OCCUPIED' ? (
-          <div className="flex flex-col items-center justify-center h-48 bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center space-y-4">
-            <div className="text-slate-400 flex flex-col items-center">
-              <span className="text-2xl mb-2">🍽️</span>
-              <p className="text-xs font-bold uppercase tracking-widest">No sent items yet</p>
-            </div>
-            <button
-              onClick={handleReleaseTable}
-              disabled={isReleasing}
-              className="px-6 py-3 bg-red-100 hover:bg-red-200 text-red-800 border border-red-200 rounded-xl font-black uppercase tracking-widest text-xs transition-colors w-full"
+      <div className="flex-1 overflow-y-auto pr-2 relative" data-lenis-prevent>
+        <AnimatePresence mode="popLayout">
+          {loading && items.length === 0 ? (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="p-3 space-y-2"
             >
-              {isReleasing ? 'Freeing...' : 'Free Table'}
-            </button>
-          </div>
-        ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 bg-slate-50 border border-slate-200 rounded-2xl text-slate-400">
-            <span className="text-2xl mb-2">🍽️</span>
-            <p className="text-xs font-bold uppercase tracking-widest">No sent items yet</p>
-          </div>
-        ) : (
-          items.map((item) => (
-            <div
-              key={item.id}
-              className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3"
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="h-12 bg-slate-100 rounded-xl animate-pulse" />
+              ))}
+            </motion.div>
+          ) : items.length === 0 && tableStatus === 'OCCUPIED' ? (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="flex flex-col items-center justify-center h-40 bg-slate-50 border border-slate-200 rounded-2xl m-4 p-4 text-center space-y-3"
             >
-              <div className="flex items-start justify-between gap-4">
-                <span className="font-bold text-slate-900 leading-tight">
-                  {item.menu_items?.name || 'Unknown Item'}
-                </span>
-                <span
-                  className={cn(
-                    'text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-widest border whitespace-nowrap',
-                    STATUS_COLORS[item.status] || STATUS_COLORS.NEW
-                  )}
-                >
-                  {item.status}
-                </span>
+              <div className="text-slate-400 flex flex-col items-center">
+                <span className="text-2xl mb-1">🍽️</span>
+                <p className="text-[10px] font-bold uppercase tracking-widest mt-1">No sent items</p>
               </div>
-              
-              {item.modifiers && Object.keys(item.modifiers).length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {Object.entries(item.modifiers).map(([key, value]) => {
-                    if (key === 'Custom Note') {
-                      return (
-                        <span key={key} className="text-xs font-bold text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded-md">
-                          Note: {String(value)}
-                        </span>
-                      )
-                    }
-                    return (
-                      <span key={key} className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">
-                        {key.replace(/_/g, ' ')}
+              <button
+                onClick={handleReleaseTable}
+                disabled={isReleasing}
+                className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl font-black uppercase tracking-widest text-[10px] transition-colors w-full shadow-sm hover:shadow-md"
+              >
+                {isReleasing ? 'Freeing...' : 'Free Table'}
+              </button>
+            </motion.div>
+          ) : items.length === 0 ? (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2 p-4 text-center"
+            >
+              <span className="text-2xl opacity-50 mb-1">✓</span>
+              <p className="text-[10px] font-bold uppercase tracking-widest">No Active Orders</p>
+            </motion.div>
+          ) : (
+            <div className="p-2 space-y-2">
+              {items.map((item) => (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, y: 5, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  key={item.id}
+                  className="flex flex-col p-2.5 rounded-xl gap-1.5 border shadow-sm bg-white border-slate-100"
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <span className="font-bold text-slate-900 text-xs block">
+                        {item.menu_items?.name || 'Unknown Item'}
                       </span>
-                    )
-                  })}
-                </div>
-              )}
+                    </div>
+                    <div className={cn(
+                      'flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest whitespace-nowrap shrink-0 border',
+                      STATUS_COLORS[item.status] || STATUS_COLORS.NEW
+                    )}>
+                      {item.status}
+                    </div>
+                  </div>
+                  
+                  {item.modifiers && Object.keys(item.modifiers).length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                      {Object.entries(item.modifiers).map(([key, value]) => {
+                        if (key === 'Custom Note') {
+                          return (
+                            <span key={key} className="text-[9px] font-black uppercase tracking-widest text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-md">
+                              Note: {String(value)}
+                            </span>
+                          )
+                        }
+                        return (
+                          <span key={key} className="text-[9px] font-black uppercase tracking-widest text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md">
+                            {key.replace(/_/g, ' ')}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  )}
+                </motion.div>
+              ))}
             </div>
-          ))
-        )}
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )
