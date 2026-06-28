@@ -14,6 +14,8 @@ import type {
   PendingApproval,
 } from '@/types'
 import { CrossOutletMetricCards } from '@/components/features/manager/CrossOutletMetricCards'
+import { SurfaceHeader } from '@/components/UI/SurfaceHeader'
+import { motion, AnimatePresence, type Variants } from 'motion/react'
 
 type MenuItem = {
   id: string
@@ -297,7 +299,14 @@ export default function ManagerDashboard() {
   }
 
   const handleRemoveTable = async (tableId: string) => {
-    await supabase.from('tables').delete().eq('id', tableId)
+    const { error } = await supabase.from('tables').delete().eq('id', tableId)
+    if (error) {
+      if (error.code === '23503' || error.message.includes('Conflict')) {
+        alert('Cannot delete this table because it has past or active orders associated with it.')
+      } else {
+        alert('Failed to delete table: ' + error.message)
+      }
+    }
   }
 
   const toggleLowStock = async (id: string, currentState: boolean) => {
@@ -324,28 +333,51 @@ export default function ManagerDashboard() {
     setPendingApprovals((prev) => prev.filter((a) => a.id !== orderId))
   }
 
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  }
+
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  }
+
   return (
-    <main className="min-h-screen bg-slate-50 md:p-8 p-4">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <header>
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-            Manager Dashboard
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      <SurfaceHeader surfaceName="Manager" />
+
+      <motion.main 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full flex flex-col gap-8"
+      >
+        <motion.header variants={itemVariants}>
+          <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">
+            Organization Dashboard
           </h1>
-          <p className="text-slate-500 font-medium mt-1">
-            Organization Overview — All Outlets
+          <p className="text-slate-500 font-bold mt-1 tracking-widest uppercase text-sm">
+            Live Metrics & Operations Control
           </p>
-        </header>
+        </motion.header>
 
-        <CrossOutletMetricCards
-          outletMetrics={outletMetrics}
-          totalRevenue={totalRevenue}
-          totalActiveTables={totalActiveTables}
-          isLoading={isLoading}
-        />
-
-        <RevenueChart data={chartData} isLoading={isLoading} />
+        <motion.div variants={itemVariants}>
+          <CrossOutletMetricCards
+            outletMetrics={outletMetrics}
+            totalRevenue={totalRevenue}
+            totalActiveTables={totalActiveTables}
+            isLoading={isLoading}
+          />
+        </motion.div>
 
         {pendingApprovals.length > 0 && (
+          <motion.div variants={itemVariants}>
           <section className="bg-orange-100 border-2 border-orange-200 rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-6">
               <ShieldCheck className="w-6 h-6 text-orange-800" />
@@ -377,11 +409,21 @@ export default function ManagerDashboard() {
               ))}
             </div>
           </section>
+          </motion.div>
         )}
 
-        <TopMovingItemsTable items={topItems} isLoading={isLoading} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <motion.div variants={itemVariants} className="lg:col-span-2">
+            <RevenueChart data={chartData} isLoading={isLoading} />
+          </motion.div>
 
-        <section className="bg-white rounded-2xl border-2 border-slate-200 overflow-hidden">
+          <motion.div variants={itemVariants} className="lg:col-span-1">
+            <TopMovingItemsTable items={topItems} isLoading={isLoading} />
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <motion.section variants={itemVariants} className="bg-white rounded-2xl border-2 border-slate-200 overflow-hidden flex flex-col">
           <div className="p-6 border-b-2 border-slate-200 bg-slate-900 flex justify-between items-center">
             <h2 className="text-lg font-black text-white uppercase tracking-widest">Table Management (Outlet 1)</h2>
             <button
@@ -404,11 +446,11 @@ export default function ManagerDashboard() {
                   </button>
                 )}
               </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </motion.section>
 
-        <section className="bg-white rounded-2xl border-2 border-slate-200 overflow-hidden">
+          <motion.section variants={itemVariants} className="bg-white rounded-2xl border-2 border-slate-200 overflow-hidden flex flex-col">
           <div className="p-6 border-b-2 border-slate-200 bg-slate-900 flex justify-between items-center">
             <div className="flex items-center gap-4">
               <h2 className="text-lg font-black text-white uppercase tracking-widest">
@@ -426,7 +468,7 @@ export default function ManagerDashboard() {
             </button>
           </div>
 
-          <div className="divide-y-2 divide-slate-100 max-h-[600px] overflow-y-auto">
+          <div className="divide-y-2 divide-slate-100 max-h-[600px] overflow-y-auto" data-lenis-prevent>
             {menuItems.map((item) => (
               <div
                 key={item.id}
@@ -453,7 +495,7 @@ export default function ManagerDashboard() {
                   {item.is_low_stock ? (
                     <>
                       <AlertTriangle className="w-5 h-5" />
-                      Low Stock / 86&apos;d
+                      No Stock
                     </>
                   ) : (
                     <>
@@ -471,14 +513,15 @@ export default function ManagerDashboard() {
               </div>
             )}
           </div>
-        </section>
+        </motion.section>
       </div>
+      </motion.main>
 
       <MenuItemModal
         isOpen={showMenuItemModal}
         onClose={() => setShowMenuItemModal(false)}
         onSuccess={fetchDashboardData}
       />
-    </main>
+    </div>
   )
 }

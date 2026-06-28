@@ -3,6 +3,7 @@
 import { formatINR } from '@/lib/utils'
 import { TrendingUp, Users, CheckCircle2 } from 'lucide-react'
 import type { OutletMetrics } from '@/types'
+import NumberFlow from '@number-flow/react'
 
 type CrossOutletMetricCardsProps = {
   outletMetrics: OutletMetrics[]
@@ -28,8 +29,8 @@ export function CrossOutletMetricCards({
             <p className="text-sm font-black text-slate-900 uppercase tracking-widest mb-1">
               Total Revenue
             </p>
-            <p className="text-4xl font-black text-slate-900">
-              {isLoading ? '...' : formatINR(totalRevenue)}
+            <p className="text-4xl font-black text-slate-900 flex items-center">
+              {isLoading ? '...' : <NumberFlow value={totalRevenue} format={{ style: 'currency', currency: 'INR' }} />}
             </p>
           </div>
         </div>
@@ -42,7 +43,7 @@ export function CrossOutletMetricCards({
               Active Tables
             </p>
             <p className="text-4xl font-black text-slate-900">
-              {isLoading ? '...' : totalActiveTables}
+              {isLoading ? '...' : <NumberFlow value={totalActiveTables} />}
             </p>
           </div>
         </div>
@@ -63,20 +64,20 @@ export function CrossOutletMetricCards({
             <div className="space-y-3 text-sm">
               <div className="flex justify-between items-center border-b border-slate-200 pb-2">
                 <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Revenue</span>
-                <span className="font-black text-slate-900 text-lg">
-                  {formatINR(outlet.revenue)}
+                <span className="font-black text-slate-900 text-lg flex items-center">
+                  <NumberFlow value={outlet.revenue} format={{ style: 'currency', currency: 'INR' }} />
                 </span>
               </div>
               <div className="flex justify-between items-center border-b border-slate-200 pb-2">
                 <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Active Tables</span>
                 <span className="font-black text-slate-900 text-lg">
-                  {outlet.active_tables}
+                  <NumberFlow value={outlet.active_tables} />
                 </span>
               </div>
               <div className="flex justify-between items-center pb-2">
                 <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Items Served</span>
                 <span className="font-black text-slate-900 text-lg">
-                  {outlet.completed_items}
+                  <NumberFlow value={outlet.completed_items} />
                 </span>
               </div>
             </div>

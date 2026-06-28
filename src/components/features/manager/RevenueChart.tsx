@@ -5,7 +5,8 @@ import { useEffect, useRef } from 'react'
 import { formatINR } from '@/lib/utils'
 import {
   Bar,
-  BarChart,
+  Area,
+  ComposedChart,
   CartesianGrid,
   Legend,
   ResponsiveContainer,
@@ -67,25 +68,35 @@ export function RevenueChart({ data, isLoading }: RevenueChartProps) {
         </div>
       </div>
       
-      <div ref={scrollRef} className="h-[350px] w-full overflow-x-auto">
+      <div ref={scrollRef} className="h-[350px] w-full overflow-x-auto" data-lenis-prevent>
         <div style={{ minWidth: `${Math.max(100, (data.length / 7) * 100)}%`, height: '100%' }}>
           <ResponsiveContainer width="100%" height="100%">
-          <BarChart
+          <ComposedChart
             data={data}
             margin={{
-              top: 5,
+              top: 20,
               right: 30,
               left: 20,
-              bottom: 5,
+              bottom: 20,
             }}
           >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+            <defs>
+              <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+              </linearGradient>
+              <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0.2}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e2e8f0" />
             <XAxis 
               dataKey="date" 
               axisLine={false}
               tickLine={false}
-              tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }}
-              dy={10}
+              tick={{ fill: '#64748b', fontSize: 12, fontWeight: 800 }}
+              dy={15}
             />
             <YAxis
               yAxisId="left"
@@ -93,9 +104,9 @@ export function RevenueChart({ data, isLoading }: RevenueChartProps) {
               stroke="#6366f1"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: '#6366f1', fontSize: 12, fontWeight: 700 }}
+              tick={{ fill: '#6366f1', fontSize: 12, fontWeight: 900 }}
               tickFormatter={(value) => `₹${value}`}
-              dx={-10}
+              dx={-15}
             />
             <YAxis
               yAxisId="right"
@@ -103,48 +114,51 @@ export function RevenueChart({ data, isLoading }: RevenueChartProps) {
               stroke="#10b981"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: '#10b981', fontSize: 12, fontWeight: 700 }}
-              dx={10}
+              tick={{ fill: '#10b981', fontSize: 12, fontWeight: 900 }}
+              dx={15}
             />
             <Tooltip
-              cursor={{ fill: '#f8fafc' }}
+              cursor={{ fill: 'transparent', stroke: '#e2e8f0', strokeWidth: 2, strokeDasharray: '4 4' }}
               contentStyle={{
-                backgroundColor: '#0f172a',
-                borderRadius: '12px',
-                border: 'none',
-                color: '#fff',
-                fontWeight: 'bold',
-                padding: '12px',
+                backgroundColor: '#ffffff',
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                color: '#0f172a',
+                fontWeight: '900',
+                padding: '16px',
               }}
-              itemStyle={{ fontWeight: 900 }}
+              itemStyle={{ fontWeight: 900, textTransform: 'uppercase' }}
               formatter={(value: any, name: any) => {
                 if (name === 'revenue') return [formatINR(Number(value)), 'Revenue']
                 if (name === 'orders') return [value, 'Orders']
                 return [value, name]
               }}
-              labelStyle={{ color: '#94a3b8', marginBottom: '4px', textTransform: 'uppercase', fontSize: '12px' }}
+              labelStyle={{ color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', fontSize: '12px', fontWeight: 900 }}
             />
             <Legend 
-              wrapperStyle={{ paddingTop: '20px', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '12px' }}
-              formatter={(value) => <span className="text-slate-600">{value}</span>}
+              wrapperStyle={{ paddingTop: '20px', fontWeight: '900', textTransform: 'uppercase', fontSize: '12px' }}
+              formatter={(value) => <span className="text-slate-900">{value}</span>}
             />
-            <Bar
+            <Area
               yAxisId="left"
+              type="monotone"
               dataKey="revenue"
               name="revenue"
-              fill="#6366f1"
-              radius={[6, 6, 0, 0]}
-              barSize={32}
+              stroke="#6366f1"
+              strokeWidth={3}
+              fillOpacity={1}
+              fill="url(#colorRevenue)"
             />
             <Bar
               yAxisId="right"
               dataKey="orders"
               name="orders"
-              fill="#10b981"
+              fill="url(#colorOrders)"
               radius={[6, 6, 0, 0]}
-              barSize={32}
+              barSize={24}
             />
-          </BarChart>
+          </ComposedChart>
         </ResponsiveContainer>
         </div>
       </div>

@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { X, Loader2 } from 'lucide-react'
+import { X, Loader2, Utensils } from 'lucide-react'
 import { DEFAULT_OUTLET_ID } from '@/lib/constants'
+import { motion, AnimatePresence } from 'motion/react'
 
 type MenuItemModalProps = {
   isOpen: boolean
@@ -62,21 +63,39 @@ export function MenuItemModal({ isOpen, onClose, onSuccess }: MenuItemModalProps
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200">
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-slate-50">
-          <div>
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Add Menu Item</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl transition-colors"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-sm"
+        >
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200"
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+            <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-slate-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center">
+                  <Utensils className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Add Item</h2>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Global Menu</p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
             <div className="p-3 bg-red-100 text-red-800 text-xs font-black uppercase tracking-widest rounded-xl text-center">
               {error}
@@ -147,7 +166,9 @@ export function MenuItemModal({ isOpen, onClose, onSuccess }: MenuItemModalProps
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
