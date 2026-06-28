@@ -1,21 +1,29 @@
-'use client'
+"use client";
 
-import { differenceInMinutes, formatDistanceToNow } from 'date-fns'
-import { cn } from '@/lib/utils'
-import type { KdsOrderItem } from '@/types'
+import { cn } from "@/lib/utils";
+import type { KdsOrderItem } from "@/types";
+import { differenceInMinutes, formatDistanceToNow } from "date-fns";
+import { Clock } from "lucide-react";
+import { motion } from "motion/react";
 
 type OrderCardProps = {
-  order: KdsOrderItem
-  now: Date
-  isFocused: boolean
-  onBump: (id: string) => void
-  onFocus: () => void
-}
+  order: KdsOrderItem;
+  now: Date;
+  isFocused: boolean;
+  onBump: (id: string) => void;
+  onFocus: () => void;
+};
 
 function getAgingBorder(minsElapsed: number): string {
-  if (minsElapsed >= 10) return 'border-red-600'
-  if (minsElapsed >= 5) return 'border-yellow-500'
-  return 'border-green-500'
+  if (minsElapsed >= 10) return "border-t-red-600";
+  if (minsElapsed >= 5) return "border-t-yellow-500";
+  return "border-t-slate-900";
+}
+
+function getAgingText(minsElapsed: number): string {
+  if (minsElapsed >= 10) return "text-red-600";
+  if (minsElapsed >= 5) return "text-yellow-600";
+  return "text-slate-500";
 }
 
 export function OrderCard({
@@ -25,81 +33,76 @@ export function OrderCard({
   onBump,
   onFocus,
 }: OrderCardProps) {
-  const firedAt = new Date(order.fired_at)
-  const minsElapsed = differenceInMinutes(now, firedAt)
-  const agingBorder = getAgingBorder(minsElapsed)
+  const firedAt = new Date(order.fired_at);
+  const minsElapsed = differenceInMinutes(now, firedAt);
+  const agingBorder = getAgingBorder(minsElapsed);
+  const agingText = getAgingText(minsElapsed);
 
   return (
-    <div
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
       onClick={onFocus}
       className={cn(
-        'flex flex-col justify-between w-80 min-h-[320px] bg-white rounded-2xl overflow-hidden border-4 cursor-pointer',
+        "flex flex-col justify-between w-full min-h-[320px] bg-white rounded-[2rem] overflow-hidden border-x border-b border-t-8 border-slate-200 cursor-pointer shadow-sm hover:shadow-xl transition-all",
         agingBorder,
-        isFocused && 'ring-4 ring-indigo-600 ring-offset-4 ring-offset-slate-50'
-      )}
-    >
+        isFocused &&
+          "ring-4 ring-slate-900 ring-offset-4 ring-offset-slate-50 shadow-2xl scale-[1.02]",
+      )}>
       <div className="p-6 flex-1 flex flex-col">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex flex-col gap-1">
-            <span
-              className={cn(
-                'text-xs font-black px-3 py-1 rounded-full uppercase w-fit',
-                order.status === 'NEW'
-                  ? 'bg-blue-100 text-blue-800'
-                  : 'bg-orange-100 text-orange-800'
-              )}
-            >
-              {order.status}
-            </span>
+        <div className="flex justify-between items-start mb-6">
+          <div className="flex flex-col gap-2">
             {order.table_number && (
-              <span className="text-xs font-bold text-slate-500">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                 Table {order.table_number}
               </span>
             )}
           </div>
-          <span
+          <div
             className={cn(
-              'text-sm font-black',
-              minsElapsed >= 10 ? 'text-red-600' : 'text-slate-500'
-            )}
-          >
+              "flex items-center gap-1.5 text-sm font-black",
+              agingText,
+            )}>
+            <Clock className="w-4 h-4" />
             {formatDistanceToNow(firedAt, { addSuffix: true })}
-          </span>
+          </div>
         </div>
-        <h2 className="text-3xl font-black text-slate-900 mb-2 leading-tight">
-          {order.menu_items?.name ?? 'Unknown Item'}
+
+        <h2 className="text-2xl font-black text-slate-900 mb-4 leading-tight">
+          {order.menu_items?.name ?? "Unknown Item"}
         </h2>
 
         {order.modifiers && Object.keys(order.modifiers).length > 0 && (
-          <div className="mt-4 pt-4 border-t-2 border-slate-200 flex-1">
-            <p className="text-xs font-black text-slate-900 uppercase tracking-wider mb-2">
-              Modifiers
+          <div className="mt-2 pt-4 border-t border-slate-100 flex-1">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+              Modifiers & Notes
             </p>
-            <ul className="space-y-1">
+            <ul className="space-y-2">
               {Object.entries(order.modifiers).map(([key, value]) => {
-                if (key === 'Custom Note') {
+                if (key === "Custom Note") {
                   return (
                     <li
                       key={key}
-                      className="text-sm font-black text-red-800 bg-red-100 p-3 rounded-xl border border-red-200 mt-2"
-                    >
-                      <span className="uppercase text-[10px] tracking-widest block text-red-600 mb-1">
+                      className="text-sm font-black text-red-800 bg-red-50 p-3 rounded-xl border border-red-100">
+                      <span className="uppercase text-[9px] tracking-widest block text-red-500 mb-1">
                         Special Instructions
                       </span>
                       {String(value)}
                     </li>
-                  )
+                  );
                 }
 
                 return (
                   <li
                     key={key}
-                    className="text-sm font-bold text-slate-700 flex items-start gap-2"
-                  >
+                    className="text-xs font-bold text-slate-700 bg-slate-50 p-2 rounded-lg border border-slate-100 flex items-center gap-2">
                     <span className="text-slate-400 font-black">•</span>
-                    {key.replace(/_/g, ' ')}: {String(value)}
+                    <span className="capitalize">{key.replace(/_/g, " ")}</span>
                   </li>
-                )
+                );
               })}
             </ul>
           </div>
@@ -108,14 +111,13 @@ export function OrderCard({
 
       <button
         onClick={(e) => {
-          e.stopPropagation()
-          onBump(order.id)
+          e.stopPropagation();
+          onBump(order.id);
         }}
-        className="w-full h-24 bg-slate-900 hover:bg-black active:bg-slate-800 text-white font-black text-3xl uppercase tracking-widest flex items-center justify-center border-t-4 border-slate-900"
-        aria-label={`DONE ${order.menu_items?.name}`}
-      >
+        className="w-full py-5 bg-slate-900 hover:bg-black active:bg-slate-800 text-white font-black text-xl uppercase tracking-widest flex items-center justify-center transition-colors"
+        aria-label={`BUMP ${order.menu_items?.name}`}>
         DONE
       </button>
-    </div>
-  )
+    </motion.div>
+  );
 }
