@@ -58,6 +58,11 @@ export function Footer() {
                 className="hover:text-[#C5A880] transition-colors">
                 <RevealText text="Investors" />
               </Link>
+              <Link
+                href="/howtouse"
+                className="hover:text-[#C5A880] transition-colors">
+                <RevealText text="How to Use" />
+              </Link>
             </div>
           </div>
         </div>
